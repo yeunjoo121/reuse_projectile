@@ -1,4 +1,11 @@
-class data:
+import RPi.GPIO as GPIO
+import pigpio
+import serial
+import time
+
+pi = pigpio.pi()
+
+class Data:
     transmitted = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Roll = 0.0
     Pitch = 0.0
@@ -9,37 +16,99 @@ class data:
     X_acc = 0.0
     Y_acc = 0.0
     Z_acc = 0.0
-    
-    def str_to_float(self, splited_str):
-        for j in range(0, 9):
+        
+    #0부터 9, '.', '-'이외의 값 들어오면 이전값으로 계속 있음. 정해진 값 들어와야 바꿈.
+    def str_to_float(self, splited_str): 
+        for j in range(0, 9):# transmitted에 다 넣고 나중에 분리
             error = 0
             for i in range(0, len(splited_str[j])):
                 if (not((splited_str[j][i] >= '0' and splited_str[j][i] <= '9') or (splited_str[j][i] == '.')
                       or (splited_str[j][i] == '-'))):
-                    print("transformation error!\n")
+                   
                     error = 1
             if (error == 0):
                 self.transmitted[j] = float(splited_str[j])
-        """self.Roll = transmitted[0]
-        self.Pitch = transmitted[1]
-        self.Yaw = transmitted[2]
-        self.Gyro_X = transmitted[3]
-        self.Gyro_Y = transmitted[4]
-        self.Gyro_Z = transmitted[5]
-        self.acc_X = transmitted[6]
-        self.acc_Y = transmitted[7]
-        self.acc_Z = transmitted[8]"""
+        self.Roll = self.transmitted[0]
+        self.Pitch = self.transmitted[1]
+        self.Yaw = self.transmitted[2]
+        self.Gyro_X = self.transmitted[3]
+        self.Gyro_Y = self.transmitted[4]
+        self.Gyro_Z = self.transmitted[5]
+        self.X_acc = self.transmitted[6]
+        self.Y_acc = self.transmitted[7]
+        self.Z_acc = self.transmitted[8]
     
+    # data 출력하는 함수
     def print_data(self):
-        #print("Roll : {0}" .format(self.euler_angle[0]))
         print("Roll : {0} Pitch : {1} Yaw : {2}".format(self.Roll, self.Pitch, self.Yaw))
         print("Gyro_X : {0} Gyro_Y : {1} Gyro_Z : {2}".format(self.Gyro_X, self.Gyro_Y, self.Gyro_Z))
         print("X_acc : {0} Y_acc : {1} Z_acc : {2}".format(self.X_acc, self.Y_acc, self.Z_acc))
         print("\n")
 
-transmitted_str = "-172.12,-79.86,74.4,0.0,0.0,0.0,-0.986,-0.022,-0.175"
-splited_str = transmitted_str.split(',')
-data1 = data()
-data1.str_to_float(splited_str)
-data1.print_data()
+def main():
+    
+    EBIMU = serial.Serial('/dev/ttyS0', 115200)
+    """
+    EBIMU.write(b'<lf>') # b는 binary, <lf>는 초기값 load
+    time.sleep(0.5)
+    EBIMU.write(b'<sor0>') # <sor0>는 polling mode (set output rate)
+    time.sleep(0.1)
+    EBIMU.write(b'<sof1>') # <sof1>는 Euler Angles 출력
+    time.sleep(0.1)
+    EBIMU.write(b'<sog1>') # <sog1>은 자이로(각속도) 데이터 출력
+    time.sleep(0.1)
+    EBIMU.write(b'<soa1>') # <soa1>는 가속도 데이터 출력 
+    time.sleep(0.1)
+    """
+    EBIMU.flushInput()
+    """
+    transmitted_str = "-172.12,-79.86,74.4,0.0,0.0,0.0,-0.986,-0.022,-0.175"
+    splited_str = transmitted_str.split(',')
+    """
+    data = Data()
+    
+    before = time.perf_counter()
+    print(before)
+    count = 0;
+    while (True):
+    #sensor data
+        for i in range(1):
+            EBIMU.write(b'*') # polling mode에서 데이터 받아오기 시작
+            s = EBIMU.read(1)   # 데이터 하나씩만 읽어옴
+            if (s == b'*'):
+                datainput = b''
+                while (s != b'\n'):
+                    s = EBIMU.read(1)
+                    datainput = datainput + s
+                datainput = datainput[0:len(datainput) - 2]; #\y\n제거
+                temp = datainput.decode('utf-8') # 바이트 객체로 정의된 문자열을 유니코드 문자열로 변환
+                splited_str = temp.split(',')
 
+                data.str_to_float(splited_str)
+                data.print_data()
+                count += 1
+                after = time.perf_counter()
+                print(after)
+                if (after - before >= 240 ):
+                    print(count)
+                    print(after)
+                    print(before)
+                    exit(1)
+                """
+                a = 1500-(100/9*(data.Yaw))
+                b = 1334+(50*(data.Pitch)/9)
+                if (a <= 500):
+                    a = 500
+                elif (a >= 2500):
+                    a = 2500
+                    
+                if (b <= 500):
+                    b = 500
+                elif (b >= 2500):
+                    b = 2500
+                    
+                pi.set_servo_pulsewidth(7, a)
+                """
+
+if __name__ == "__main__":
+    main()
