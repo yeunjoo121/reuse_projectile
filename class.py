@@ -2,6 +2,10 @@ import RPi.GPIO as GPIO
 import pigpio
 import serial
 import time
+import numpy as np
+import math
+
+np.set_printoptions(precision=6, suppress = True)
 
 pi = pigpio.pi()
 
@@ -28,6 +32,7 @@ class Data:
                     error = 1
             if (error == 0):
                 self.transmitted[j] = float(splited_str[j])
+                
         self.Roll = self.transmitted[0]
         self.Pitch = self.transmitted[1]
         self.Yaw = self.transmitted[2]
@@ -37,6 +42,7 @@ class Data:
         self.X_acc = self.transmitted[6]
         self.Y_acc = self.transmitted[7]
         self.Z_acc = self.transmitted[8]
+
     
     # data 출력하는 함수
     def print_data(self):
@@ -44,8 +50,13 @@ class Data:
         print("Gyro_X : {0} Gyro_Y : {1} Gyro_Z : {2}".format(self.Gyro_X, self.Gyro_Y, self.Gyro_Z))
         print("X_acc : {0} Y_acc : {1} Z_acc : {2}".format(self.X_acc, self.Y_acc, self.Z_acc))
         print("\n")
+    def get_data(self):
+        arr = np.array([[self.Roll, self.Pitch, self.Yaw, self.Gyro_X, self.Gyro_Y, self.Gyro_Z,
+                        self.X_acc, self.Y_acc, self.Z_acc]])
+        return arr
 
 def main():
+    buffer1 = ([[0, 0, 0, 0, 0, 0, 0, 0, 0]])
     
     EBIMU = serial.Serial('/dev/ttyS0', 115200)
     """
@@ -85,16 +96,19 @@ def main():
                 splited_str = temp.split(',')
 
                 data.str_to_float(splited_str)
-                data.print_data()
+                #data.print_data()
+                
+                buffer1 = np.append(buffer1, data.get_data(), axis = 0)
                 count += 1
                 after = time.perf_counter()
-                print(after)
-                if (after - before >= 240 ):
-                    print(count)
-                    print(after)
-                    print(before)
+                #print(after)
+                if (after - before >= 1):
+                    i = 0;
+                    while (i < count):
+                        print(buffer1[i])
+                        i+=1
                     exit(1)
-                """
+                
                 a = 1500-(100/9*(data.Yaw))
                 b = 1334+(50*(data.Pitch)/9)
                 if (a <= 500):
@@ -108,7 +122,7 @@ def main():
                     b = 2500
                     
                 pi.set_servo_pulsewidth(7, a)
-                """
+                
 
 if __name__ == "__main__":
     main()
