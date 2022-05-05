@@ -57,6 +57,7 @@ class Data:
 
 def main():
     buffer1 = ([[0, 0, 0, 0, 0, 0, 0, 0, 0]])
+    print("start")
     
     EBIMU = serial.Serial('/dev/ttyS0', 115200)
     """
@@ -78,8 +79,8 @@ def main():
     """
     data = Data()
     
-    before = time.perf_counter()
-    print(before)
+    #before = time.perf_counter()
+    #print(before)
     count = 0;
     while (True):
     #sensor data
@@ -98,17 +99,20 @@ def main():
                 data.str_to_float(splited_str)
                 #data.print_data()
                 
-                buffer1 = np.append(buffer1, data.get_data(), axis = 0)
-                count += 1
-                after = time.perf_counter()
+                #buffer1 = np.append(buffer1, data.get_data(), axis = 0)
+                #count += 1
+                #after = time.perf_counter()
                 #print(after)
-                if (after - before >= 1):
+                """
+                if (after - before >= 480):
+                    print(count)
+                    time.sleep(10)
                     i = 0;
-                    while (i < count):
-                        print(buffer1[i])
-                        i+=1
+                    #while (i < count):
+                        #print(buffer1[i])
+                        #i+=1
                     exit(1)
-                
+                """
                 a = 1500-(100/9*(data.Yaw))
                 b = 1334+(50*(data.Pitch)/9)
                 if (a <= 500):
@@ -122,6 +126,7 @@ def main():
                     b = 2500
                     
                 pi.set_servo_pulsewidth(7, a)
+                pi.set_servo_pulsewidth(12, a)
                 
 
 if __name__ == "__main__":
