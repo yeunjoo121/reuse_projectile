@@ -79,7 +79,7 @@ def main():
     """
     data = Data()
     
-    #before = time.perf_counter()
+    before = time.perf_counter()
     #print(before)
     count = 0;
     while (True):
@@ -99,12 +99,12 @@ def main():
                 data.str_to_float(splited_str)
                 #data.print_data()
                 
-                #buffer1 = np.append(buffer1, data.get_data(), axis = 0)
-                #count += 1
-                #after = time.perf_counter()
+                buffer1 = np.append(buffer1, data.get_data(), axis = 0)
+                count += 1
+                after = time.perf_counter()
                 #print(after)
-                """
-                if (after - before >= 480):
+                
+                if (after - before >= 720):
                     print(count)
                     time.sleep(10)
                     i = 0;
@@ -112,7 +112,7 @@ def main():
                         #print(buffer1[i])
                         #i+=1
                     exit(1)
-                """
+                
                 a = 1500-(100/9*(data.Yaw))
                 b = 1334+(50*(data.Pitch)/9)
                 if (a <= 500):
