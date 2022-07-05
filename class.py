@@ -10,6 +10,7 @@ np.set_printoptions(precision=6, suppress = True)
 pi = pigpio.pi()
 
 class Data:
+    # transmitted의 첫번째는 sensor 값 받아오는 것, 두번째는 process하는 것, 세번째는 
     transmitted = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     Roll = 0.0
     Pitch = 0.0
@@ -50,6 +51,7 @@ class Data:
         print("Gyro_X : {0} Gyro_Y : {1} Gyro_Z : {2}".format(self.Gyro_X, self.Gyro_Y, self.Gyro_Z))
         print("X_acc : {0} Y_acc : {1} Z_acc : {2}".format(self.X_acc, self.Y_acc, self.Z_acc))
         print("\n")
+        
     def get_data(self):
         arr = np.array([[self.Roll, self.Pitch, self.Yaw, self.Gyro_X, self.Gyro_Y, self.Gyro_Z,
                         self.X_acc, self.Y_acc, self.Z_acc]])
@@ -57,6 +59,7 @@ class Data:
 
 def main():
     buffer1 = ([[0, 0, 0, 0, 0, 0, 0, 0, 0]])
+
     print("start")
     
     EBIMU = serial.Serial('/dev/ttyS0', 115200)
@@ -79,55 +82,43 @@ def main():
     """
     data = Data()
     
-    before = time.perf_counter()
     #print(before)
     count = 0;
     while (True):
     #sensor data
-        for i in range(1):
-            EBIMU.write(b'*') # polling mode에서 데이터 받아오기 시작
-            s = EBIMU.read(1)   # 데이터 하나씩만 읽어옴
-            if (s == b'*'):
-                datainput = b''
-                while (s != b'\n'):
-                    s = EBIMU.read(1)
-                    datainput = datainput + s
-                datainput = datainput[0:len(datainput) - 2]; #\y\n제거
-                temp = datainput.decode('utf-8') # 바이트 객체로 정의된 문자열을 유니코드 문자열로 변환
-                splited_str = temp.split(',')
-
-                data.str_to_float(splited_str)
-                #data.print_data()
-                
-                buffer1 = np.append(buffer1, data.get_data(), axis = 0)
-                count += 1
-                after = time.perf_counter()
-                #print(after)
-                
-                if (after - before >= 720):
-                    print(count)
-                    time.sleep(10)
-                    i = 0;
-                    #while (i < count):
-                        #print(buffer1[i])
-                        #i+=1
-                    exit(1)
-                
-                a = 1500-(100/9*(data.Yaw))
-                b = 1334+(50*(data.Pitch)/9)
-                if (a <= 500):
-                    a = 500
-                elif (a >= 2500):
-                    a = 2500
-                    
-                if (b <= 500):
-                    b = 500
-                elif (b >= 2500):
-                    b = 2500
-                    
-                pi.set_servo_pulsewidth(7, a)
-                pi.set_servo_pulsewidth(12, a)
+        EBIMU.write(b'*') # polling mode에서 데이터 받아오기 시작
+        s = EBIMU.read(1)   # 데이터 하나씩만 읽어옴
+        if (s == b'*'):
+            datainput = b''
+            while (s != b'\n'):
+                s = EBIMU.read(1)
+                datainput = datainput + s
                 
 
+            datainput = datainput[0:len(datainput) - 2]; #\y\n제거
+            temp = datainput.decode('utf-8') # 바이트 객체로 정의된 문자열을 유니코드 문자열로 변환
+            splited_str = temp.split(',')
+
+            data.str_to_float(splited_str)
+            
+            #data.print_data()
+            buffer1 = np.append(buffer1, data.get_data(), axis = 0)
+
+            a = 1500-(100/9*(data.Yaw))
+            b = 1334+(50*(data.Pitch)/9)
+            if (a <= 500):
+                a = 500
+            elif (a >= 2500):
+                a = 2500
+                
+            if (b <= 500):
+                b = 500
+            elif (b >= 2500):
+                b = 2500
+
+            pi.set_servo_pulsewidth(7, a)
+            pi.set_servo_pulsewidth(12, a)
+            
+            
 if __name__ == "__main__":
     main()
