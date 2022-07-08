@@ -1,9 +1,8 @@
-import serial
 import threading
 import time
+import serial
 
-
-DEV_PLATFORM = 'PI'
+DEV_PLATFORM = 'DESKTOP'
 
 if DEV_PLATFORM == 'DESKTOP':
     port = 'COM5'
@@ -35,9 +34,9 @@ def readthread(ser):
     while alive:
         try:
             for c in ser.read():
-                line += (chr(c))
-                if line.startswith('['):
-                    if line.endswith(']'):
+                line += (chr(c))#아스키로 변환하는 함수
+                if line.startswith('['):#[로 시작하는지
+                    if line.endswith(']'):#]로 끝나는지
                         print('receive data=' + line)
                         if line == '[end]':
                             endcommand = True
@@ -83,7 +82,6 @@ def main():
             
     print('main exit')
     alive = False
-    
-    exit
+    exit()
     
 main()
