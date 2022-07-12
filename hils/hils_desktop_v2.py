@@ -52,13 +52,17 @@ def main():
                             ch = ser6.read().decode()
                 print('recv = ' + recv)
                 # 이제 rpm, angle값을 주어진 변수에 대입
-                if (index == 1):
-                    rpm1 = int(recv)
-                elif (index == 2):
-                    rpm2 = int(recv)
-                elif (index == 3):
-                    angle1 = int(recv)
-                elif (index == 4):
-                    angle2 = int(recv)        
+                if (index == '1'):
+                    rpm1 = recv
+                    print('rpm1 : ' , rpm1)
+                elif (index == '2'):
+                    rpm2 = recv
+                    print('rpm2: ' , rpm2)
+                elif (index == '3'):
+                    angle1 = recv
+                    print('angle1: ' , angle1)
+                elif (index == '4'):
+                    angle2 = recv
+                    print('angle2 : ' , angle2)        
 
 main()
