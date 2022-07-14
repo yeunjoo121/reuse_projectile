@@ -54,16 +54,26 @@ class Data:
         
     #0부터 9, '.', '-'이외의 값 들어오면 이전값으로 계속 있음. 정해진 값 들어와야 바꿈.
     def str_to_float(self, splited_str): 
-        for j in range(0, 9):# transmitted에 다 넣고 나중에 분리
+        for j in range(0, len(splited_str)):# transmitted에 다 넣고 나중에 분리
             error = 0
+            decimalP = 0
+            minus = 0
             for i in range(0, len(splited_str[j])):
                 if (not((splited_str[j][i] >= '0' and splited_str[j][i] <= '9') or (splited_str[j][i] == '.')
                       or (splited_str[j][i] == '-'))):
-                   
                     error = 1
+                if (splited_str[j][i] == '.'):
+                    decimalP += 1
+                    if (decimalP >= 2):
+                        error = 1
+                elif (splited_str[j][i] == '-'):
+                    minus += 1
+                    if (minus >= 2):
+                        error = 1
             if (error == 0):
-                #self.transmitted[j] = float(splited_str[j])
-                self.transmitted[j] = 1
+                self.transmitted[j] = float(splited_str[j])
+            elif (error == 1):# filtering 단계에서 바꾸어줌. 센서들로 추측값을 넣던지, 혹은 이전 값을 넣던지.
+                self.transmitted[j] = np.NaN
                 
         self.Roll = self.transmitted[0]
         self.Pitch = self.transmitted[1]
@@ -93,13 +103,22 @@ def main():
     global star
     global null
     buffer1 = ([[0, 0, 0, 0, 0, 0, 0, 0, 0]])
-
+    
+    maxlen = 181
+    length = 0
+    
+    first = 0
     print("start")
     
     data = Data()
     
     # there is no need to set EBIMU
-    
+    """
+    transmitted_str = "-172.12,-79.86,74.4,0.00.0,0.0,-0.986,-0.022,-0.175"
+    splited_str = transmitted_str.split(',')
+    data.str_to_float(splited_str)
+    data.print_data()
+    """
     while (True):
         # print('star write')
         ser0.write(star.encode()); # *하나 써서 데이터 받아오기 시작
@@ -110,11 +129,21 @@ def main():
                 s = ser0.read().decode()
                 datainput = datainput + s
                 
-            print('receive data=' + datainput)
+                length += 1
+                if (length > maxlen):
+                    # 오류 시 nan으로 처리. 그냥 datainput에 숫자 아닌 글자 들어있는 셋으로 초기화하면 됨
+                    # new line이 올 때까지 읽어들이기. \n이 오면 그 다음 세트인 것.
+                    length = 0
+                    datainput = ''
+                    while (s != '\n'):
+                        s = ser0.read().decode()
+                    datainput = 'a,a,a,a,a,a,a,a,a\r\n'
+            
+            length = 0
+            #print('receive data=' + datainput)
             
             # 여기서 연산
             datainput = datainput[0:len(datainput) - 2] # \r\n제거
-            print(datainput)
             splited_str = datainput.split(',')
 
             data.str_to_float(splited_str)
@@ -141,9 +170,10 @@ def main():
                 
             # send angle or rpm
             element = 1/7
-            msg = str(element) + ',' + (str)(element) + ',' + (str)(element) + ',' + (str)(element) + '\n'
+            if (first == 0):
+                msg = str(element) + ',' + (str)(element) + ',' + (str)(element) + ',' + (str)(element) + (str)(element) + '\n'
+            else (first == 0):
+                msg = str(element) + ',' + (str)(element) + ',' + (str)(element) + ',' + (str)(element) + '\n'
             ser3.write(msg.encode())
-            print(type(data.Roll))
-            print(type(element))
-
+    
 main()
