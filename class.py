@@ -95,7 +95,7 @@ def main():
                 datainput = datainput + s
                 
 
-            datainput = datainput[0:len(datainput) - 2]; #\y\n제거
+            datainput = datainput[0:len(datainput) - 2] #\r\n제거
             temp = datainput.decode('utf-8') # 바이트 객체로 정의된 문자열을 유니코드 문자열로 변환
             splited_str = temp.split(',')
 

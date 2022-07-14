@@ -1,16 +1,18 @@
-import serial
-import time
 import RPi.GPIO as GPIO
 import pigpio
 import serial
+import time
 import numpy as np
 import math
 
-
-port0 = '/dev/ttyS0'
-part3 = 'dev/ttyAMA1'
+#----------------------------------------#
+#-----------add code for hils------------#
+port0 = '/dev/ttyAMA0'
+port3 = '/dev/ttyAMA1'
 baud = 115200
 
+# ser0 -> send * and receive sensor data
+# ser3 -> send angle or rpm
 ser0 = serial.Serial(
     port = port0,
     baudrate = baud,
@@ -29,10 +31,13 @@ ser3 = serial.Serial(
     timeout = 5
     )
 
-line = ''
 star = '*'
-pi = pigpio.pi()
+null = '\0'
+#---------------------------------------#
+
 np.set_printoptions(precision=6, suppress = True)
+
+pi = pigpio.pi()
 
 class Data:
     # transmitted의 첫번째는 sensor 값 받아오는 것, 두번째는 process하는 것, 세번째는 
@@ -57,7 +62,8 @@ class Data:
                    
                     error = 1
             if (error == 0):
-                self.transmitted[j] = float(splited_str[j])
+                #self.transmitted[j] = float(splited_str[j])
+                self.transmitted[j] = 1
                 
         self.Roll = self.transmitted[0]
         self.Pitch = self.transmitted[1]
@@ -84,35 +90,39 @@ class Data:
     
     
 def main():
-    global line
     global star
+    global null
     buffer1 = ([[0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-    print("pi ready")
+    print("start")
     
     data = Data()
     
+    # there is no need to set EBIMU
+    
     while (True):
-        print('star write')
-        ser.write(star.encode());
-        ch = ser.read().decode()
-        if (ch == '*'):
-            line = ''
-            while (not line.endswith('\n')):
-                line += ser.read().decode()
+        # print('star write')
+        ser0.write(star.encode()); # *하나 써서 데이터 받아오기 시작
+        s = ser0.read().decode()# 데이터 하나씩 읽어옴
+        if (s == '*'):
+            datainput = ''
+            while (s != '\n'):
+                s = ser0.read().decode()
+                datainput = datainput + s
                 
-            print('receive data=' + line)
+            print('receive data=' + datainput)
             
             # 여기서 연산
-            temp = line[1:len(line) - 2] # *,\y\n제거
-            splited_str = temp.split(',')
+            datainput = datainput[0:len(datainput) - 2] # \r\n제거
+            print(datainput)
+            splited_str = datainput.split(',')
 
             data.str_to_float(splited_str)
             
             data.print_data()
             buffer1 = np.append(buffer1, data.get_data(), axis = 0) # data 저장
             
-            # pwm값 desktop(matlab)으로 보내기 & pwm 연산
+            # pwm값 desktop으로 보내기 & pwm 연산
             a = 1500-(100/9*(data.Yaw))
             b = 1334+(50*(data.Pitch)/9)
             if (a <= 500):
@@ -125,14 +135,15 @@ def main():
             elif (b >= 2500):
                 b = 2500
             
+            # no need to move servo
             #pi.set_servo_pulsewidth(7, a)
             #pi.set_servo_pulsewidth(12, a)
                 
-            # 여기서 a값은 voltage로 변환이 필요!!
-            voltage = a/400 - 1.25
-            ser.write(('[' + str(voltage) + ']').encode())
-            
-            # line reset
-            line = ''
+            # send angle or rpm
+            element = 1/7
+            msg = str(element) + ',' + (str)(element) + ',' + (str)(element) + ',' + (str)(element) + '\n'
+            ser3.write(msg.encode())
+            print(type(data.Roll))
+            print(type(element))
 
 main()
